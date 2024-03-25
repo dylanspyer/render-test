@@ -1,130 +1,99 @@
 const express = require("express");
-const cors = require("cors");
 const app = express();
-const morgan = require("morgan");
+
+let notes = [
+  {
+    id: 1,
+    content: "HTML is easy",
+    important: true,
+  },
+  {
+    id: 2,
+    content: "Browser can execute only JavaScript",
+    important: false,
+  },
+  {
+    id: 3,
+    content: "GET and POST are the most important methods of HTTP protocol",
+    important: true,
+  },
+];
+
+app.use(express.static("dist"));
 
 const requestLogger = (request, response, next) => {
   console.log("Method:", request.method);
-  console.log("Path:", request.path);
-  console.log("Body:", request.body);
+  console.log("Path:  ", request.path);
+  console.log("Body:  ", request.body);
   console.log("---");
   next();
 };
+
+const cors = require("cors");
+
+app.use(cors());
+
+app.use(express.json());
+app.use(requestLogger);
 
 const unknownEndpoint = (request, response) => {
   response.status(404).send({ error: "unknown endpoint" });
 };
 
-morgan.token("data", function (req, res) {
-  return JSON.stringify(req.body);
-});
-
-app.use(express.json()); // Takes JSON data, transforms it into a JS object, attaches to `body` prop of `request` object
-app.use(
-  morgan(":method :url :status :res[content-length] - :response-time ms: :data")
-);
-app.use(cors());
-// app.use(requestLogger);
-// app.use(morgan("tiny"));
-
-let persons = [
-  {
-    id: 1,
-    name: "Arto Hellas",
-    number: "040-123456",
-  },
-  {
-    id: 2,
-    name: "Ada Lovelace",
-    number: "39-44-5323523",
-  },
-  {
-    id: 3,
-    name: "Dan Abramov",
-    number: "12-43-234345",
-  },
-  {
-    id: 4,
-    name: "Mary Poppendieck",
-    number: "39-23-6423122",
-  },
-];
-
 app.get("/", (request, response) => {
-  response.send("<h1>Hello darkness my old friend</h1");
+  response.send("<h1>Hello World!</h1>");
 });
 
-app.get("/api/persons", (request, response) => {
-  response.json(persons);
+app.get("/api/notes", (request, response) => {
+  response.json(notes);
 });
 
-app.get("/info", (request, response) => {
-  response.send(
-    `Phonebook has info for ${persons.length} people <br/> ${new Date()}`
-  );
+const generateId = () => {
+  const maxId = notes.length > 0 ? Math.max(...notes.map((n) => n.id)) : 0;
+  return maxId + 1;
+};
+
+app.post("/api/notes", (request, response) => {
+  const body = request.body;
+
+  if (!body.content) {
+    return response.status(400).json({
+      error: "content missing",
+    });
+  }
+
+  const note = {
+    content: body.content,
+    important: body.important || false,
+    id: generateId(),
+  };
+
+  notes = notes.concat(note);
+
+  response.json(note);
 });
 
-app.get("/api/persons/:id", (request, response) => {
+app.get("/api/notes/:id", (request, response) => {
   const id = Number(request.params.id);
-  const person = persons.find((person) => person.id === id);
-
-  if (person) {
-    response.json(person);
+  const note = notes.find((note) => note.id === id);
+  if (note) {
+    response.json(note);
   } else {
+    console.log("x");
     response.status(404).end();
   }
 });
 
-app.delete("/api/persons/:id", (request, response) => {
+app.delete("/api/notes/:id", (request, response) => {
   const id = Number(request.params.id);
-  persons = persons.filter((person) => person.id !== id);
+  notes = notes.filter((note) => note.id !== id);
+
   response.status(204).end();
-});
-
-const personExists = (name) => {
-  const lowerCaseName = name.toLowerCase();
-  const person = persons.filter(
-    (person) => person.name.toLowerCase() === lowerCaseName
-  );
-
-  return person.length > 0;
-};
-
-const generateId = () => {
-  const maxId =
-    persons.length > 0 ? Math.max(...persons.map((person) => person.id)) : 0;
-
-  return maxId + 1;
-};
-
-app.post("/api/persons", (request, response) => {
-  const body = request.body;
-
-  if (personExists(body.name)) {
-    return response.status(400).json({
-      error: "name must be unique",
-    });
-  }
-
-  if (!body.name || !body.number) {
-    return response.status(400).json({
-      error: "data missing",
-    });
-  }
-
-  const person = {
-    id: generateId(),
-    name: String(body.name),
-    number: String(body.number),
-  };
-
-  persons = persons.concat(person);
-  response.json(body);
 });
 
 app.use(unknownEndpoint);
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
