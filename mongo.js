@@ -1,40 +1,40 @@
-const mongoose = require("mongoose");
-const { default: notes } = require("../frontend-notes/src/services/notes");
+const mongoose = require('mongoose')
 
 if (process.argv.length < 3) {
-  console.log("give password as argument");
-  process.exit(1);
+  console.log('give password as argument')
+  process.exit(1)
 }
 
-const password = process.argv[2];
+const password = process.argv[2]
 
-const url = `mongodb+srv://dylanspyer:${password}@cluster0.sxy7z94.mongodb.net/noteApp?retryWrites=true&w=majority`;
+const url =
+  `mongodb+srv://fullstack:${password}@cluster0.o1opl.mongodb.net/noteApp?retryWrites=true&w=majority`
 
-mongoose.set("strictQuery", false);
+mongoose.set('strictQuery', false)
+mongoose.connect(url).then(() => {
+  const noteSchema = new mongoose.Schema({
+    content: String,
+    important: Boolean,
+  })
 
-mongoose.connect(url);
+  const Note = mongoose.model('Note', noteSchema)
 
-const noteSchema = new mongoose.Schema({
-  content: String,
-  important: Boolean,
-});
+  /*
+  const note = new Note({
+    content: 'HTML is x',
+    important: true,
+  })
 
-const Note = mongoose.model("Note", noteSchema);
+  note.save().then(result => {
+    console.log('note saved!')
+    mongoose.connection.close()
+  })
+  */
+  Note.find({}).then(result => {
+    result.forEach(note => {
+      console.log(note)
+    })
+    mongoose.connection.close()
+  })
+})
 
-// Note.find({ content: "Mongoose makes things easy" }).then((result) => {
-//   result.forEach((note) => {
-//     console.log(note);
-//   });
-//   mongoose.connection.close();
-// });
-
-const note = new Note({
-  content: "Mongoose makes things easy",
-  important: true,
-});
-
-note.save().then((result) => {
-  console.log(result);
-  console.log("note saved!");
-  mongoose.connection.close();
-});
